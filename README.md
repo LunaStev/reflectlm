@@ -1,5 +1,7 @@
 # ReflectLM
 
+![web.png](.github/web.png)
+
 ReflectLM is a self-reflective, language-structure-only AI model that learns exclusively through interaction. It starts with zero factual knowledge but can engage in dialogue, evaluate its own responses, and remember conversations for future learning.
 
 ## Features

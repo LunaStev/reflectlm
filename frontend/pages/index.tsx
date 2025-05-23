@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export default function Home() {
   const [input, setInput] = useState("")
@@ -23,28 +23,33 @@ export default function Home() {
     setInput("")
   }
 
+  useEffect(() => {
+    const chatbox = document.getElementById("chat-log")
+    if (chatbox) chatbox.scrollTop = chatbox.scrollHeight
+  }, [log])
+
   return (
-    <div style={{ padding: 40, fontFamily: "sans-serif" }}>
-      <h1>ReflectLM Chat</h1>
-      <div style={{ marginBottom: 20 }}>
+    <div className="chat-container">
+      <h1 className="chat-title">ReflectLM</h1>
+      <div id="chat-log" className="chat-log">
+        {log.map((msg, i) => (
+          <div key={i} className="chat-bubble user">
+            <p><strong>🙋‍♀️ You:</strong> {msg.user}</p>
+            <div className="chat-bubble ai">
+              <p><strong>🤖 AI:</strong> {msg.ai}</p>
+              <p className="meta">Confidence: {msg.confidence}% – {msg.reason}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="input-area">
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="메시지를 입력하세요"
-          style={{ width: "80%", padding: 10 }}
           onKeyDown={e => e.key === "Enter" && sendMessage()}
+          placeholder="Type your message..."
         />
-        <button onClick={sendMessage} style={{ padding: "10px 20px", marginLeft: 10 }}>보내기</button>
-      </div>
-      <div>
-        {log.map((msg, i) => (
-          <div key={i} style={{ marginBottom: 20 }}>
-            <p><strong>🙋‍♀️ 당신:</strong> {msg.user}</p>
-            <p><strong>🤖 AI:</strong> {msg.ai}</p>
-            <p><em>신뢰도: {msg.confidence}% – {msg.reason}</em></p>
-            <hr />
-          </div>
-        ))}
+        <button onClick={sendMessage}>Send</button>
       </div>
     </div>
   )
