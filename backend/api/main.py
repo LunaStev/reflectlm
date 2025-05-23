@@ -4,6 +4,15 @@ from pydantic import BaseModel
 from backend.model.inference import load_model_and_tokenizer
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 lang = "ko"
 model, tokenizer = load_model_and_tokenizer(lang)
 
