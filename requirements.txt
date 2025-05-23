@@ -1,0 +1,6 @@
+torch
+tokenizers
+numpy
+fastapi
+pydantic
+uvicorn
