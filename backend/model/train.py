@@ -6,16 +6,24 @@ from tokenizers import Tokenizer, models, trainers, pre_tokenizers
 from transformer import TransformerLanguageModel
 
 class TextDataset(Dataset):
-    def __init__(self, file_path, tokenizer, block_size=64):
+    def __init__(self, file_path, tokenizer, block_sizes=[4, 16, 32, 64]):
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
+
         self.examples = []
-        for item in data:
-            encoded = tokenizer.encode(item["text"]).ids
-            for i in range(0, len(encoded) - block_size + 1):
-                self.examples.append(encoded[i:i+block_size])
-                print(f"[DEBUG] 문장 길이: {len(encoded)} 토큰 → 추가됨: {len(encoded) - block_size + 1 > 0}")
-        self.block_size = block_size
+
+        for block_size in block_sizes:
+            buffer = ""
+            for item in data:
+                buffer += item["text"] + " "
+                token_ids = tokenizer.encode(buffer).ids
+                while len(token_ids) >= block_size:
+                    self.examples.append(token_ids[:block_size])
+                    token_ids = token_ids[block_size:]
+                    buffer = tokenizer.decode(token_ids)
+
+        import random
+        random.shuffle(self.examples)
 
     def __len__(self):
         return len(self.examples)
@@ -25,10 +33,17 @@ class TextDataset(Dataset):
         y = torch.tensor(self.examples[idx][1:])
         return x, y
 
+def pad_collate(batch, pad_id=0):
+    x_batch, y_batch = zip(*batch)
+    max_len = max(len(x) for x in x_batch)
+    x_padded = [torch.cat([x, torch.full((max_len - len(x),), pad_id)]) for x in x_batch]
+    y_padded = [torch.cat([y, torch.full((max_len - len(y),), pad_id)]) for y in y_batch]
+    return torch.stack(x_padded), torch.stack(y_padded)
+
 def train_model(language):
-    data_path = f"../../data/{language}/train.json"
-    tokenizer_path = f"../../tokenizers/{language}.json"
-    model_path = f"../../checkpoints/{language}/model.pt"
+    data_path = f"data/{language}/train.json"
+    tokenizer_path = f"tokenizers/{language}.json"
+    model_path = f"checkpoints/{language}/model.pt"
     os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
 
@@ -45,13 +60,13 @@ def train_model(language):
 
     vocab_size = tokenizer.get_vocab_size()
     model = TransformerLanguageModel(vocab_size)
-    dataset = TextDataset(data_path, tokenizer, block_size=8)
-    loader = DataLoader(dataset, batch_size=16, shuffle=True)
+    dataset = TextDataset(data_path, tokenizer, block_sizes=[4, 16, 32])
+    pad_id = tokenizer.token_to_id("<PAD>")
+    loader = DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=lambda b: pad_collate(b, pad_id))
 
     if len(dataset) == 0:
         print(f"[ERROR] 학습 샘플이 없습니다. block_size를 더 줄이거나 문장을 더 늘리세요.")
         return
-
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     loss_fn = torch.nn.CrossEntropyLoss()
