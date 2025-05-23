@@ -19,7 +19,7 @@ class PositionalEncoding(nn.Module):
         return x
 
 class TransformerLanguageModel(nn.Module):
-    def __init__(self, vocab_size, d_model=256, nhead=4, num_layers=4, dim_feedforward=512, max_len=512):
+    def __init__(self, vocab_size, d_model=512, nhead=8, num_layers=6, dim_feedforward=2048, max_len=512):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.pos_encoder = PositionalEncoding(d_model, max_len)
